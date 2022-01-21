@@ -113,82 +113,71 @@ class _Solver:
 
                     responder.send([_SolverState.WORKING,solver,actual_solver])
 
-                    #LOGGER.warning('solver start')
                     hashSocket = _Helper.hash_server_connect()
                     resMsg = _Helper.hash_server_work_send(hashSocket, encodedBlockID.decode(), encodedPublicKey.decode(), str(difficulty))
                     if resMsg == None:
-                        #LOGGER.warning('work send none')
                         hashSocket = None
-                    #LOGGER.warning('work send')
 
                     # working event loop
                     while True:
-                        if hashSocket == None:
-                            b_nonce = str(nonce).encode()
-                            digest = _Helper.build_digest_with_encoded_data(encodedBlockID, encodedPublicKey, b_nonce)
-                            digest_difficulty = _Helper._count_leading_zeroes(digest)
-                            if digest_difficulty >= difficulty:
-                                responder.send([_SolverState.HASH, solver, actual_solver, id, difficulty, b_nonce])
-                                difficulty = digest_difficulty + 1
-                                nonce = random.randrange(sys.maxsize)
-                            else:
-                                nonce = nonce + 1
+                        b_nonce = str(nonce).encode()
+                        digest = _Helper.build_digest_with_encoded_data(encodedBlockID, encodedPublicKey, b_nonce)
+                        digest_difficulty = _Helper._count_leading_zeroes(digest)
+                        if digest_difficulty >= difficulty:
+                            responder.send([_SolverState.HASH, solver, actual_solver, id, difficulty, b_nonce])
+                            difficulty = digest_difficulty + 1
+                            nonce = random.randrange(sys.maxsize)
                         else:
-                            time.sleep(0.1)
+                            nonce = nonce + 1
+
+                        if hashSocket != None:
                             resMsg = _Helper.hash_server_send(hashSocket, 'GET')
-                            #LOGGER.warning(resMsg)
                             if resMsg == None:
-                                #LOGGER.warning('get resMsg None')
                                 hashSocket = None
-                                continue
-                            getList = resMsg.split(',')
-                            digest_difficulty = None
-                            digest_nonce = None
-                            if getList[0] == 'GET':
-                                if getList[1] == 'EMPTY':
-                                    if getList[2] == 'EMPTY':
-                                        continue
-                                    elif getList[2] == encodedBlockID.decode():
-                                        continue
-                                    elif getList[2] != encodedBlockID.decode():
-                                        #LOGGER.warning('not eq1:' + getList[2])
-                                        #LOGGER.warning('not eq1:' + encodedBlockID.decode())
-                                        continue
-                                else:
-                                    digestBlockId = getList[1]
-                                    digest_difficulty = int(getList[2])
-                                    digest_nonce = int(getList[3])
-                                    if digestBlockId != encodedBlockID.decode():
-                                        #LOGGER.warning('not eq2:' + digestBlockId)
-                                        #LOGGER.warning('not eq2:' + encodedBlockID.decode())
-                                        continue
                             else:
-                                continue
-                            if digest_difficulty >= difficulty:
-                                LOGGER.warning(resMsg)
-                                b_nonce = str(digest_nonce).encode()
-                                responder.send([_SolverState.HASH, solver, actual_solver, id, difficulty, b_nonce])
-                                difficulty = digest_difficulty + 1
-                                nonce = random.randrange(sys.maxsize)
-                            #else:
-                                #LOGGER.warning('not >=:' + str(digest_difficulty))
-                                #LOGGER.warning('not >=:' + str(difficulty))
+                                getList = resMsg.split(',')
+                                is_hash_server_found = False
+                                if getList[0] == 'GET':
+                                    if getList[1] == 'EMPTY':
+                                        if getList[2] == 'EMPTY':
+                                            is_hash_server_found = False
+                                        elif getList[2] == encodedBlockID.decode():
+                                            is_hash_server_found = False
+                                        elif getList[2] != encodedBlockID.decode():
+                                            is_hash_server_found = False
+                                    else:
+                                        digestBlockId = getList[1]
+                                        if digestBlockId != encodedBlockID.decode():
+                                            is_hash_server_found = False
+                                        else:
+                                            is_hash_server_found = True
+                                            digest_difficulty = int(getList[2])
+                                            str_nonce = getList[3]
+                                            b_nonce = str_nonce.encode()
+                                else:
+                                    is_hash_server_found = False
+                                if is_hash_server_found:
+                                    if digest_difficulty >= difficulty:
+                                        LOGGER.warning(resMsg)
+                                        responder.send([_SolverState.HASH, solver, actual_solver, id, difficulty, b_nonce])
+                                        difficulty = digest_difficulty + 1
+                                        nonce = random.randrange(sys.maxsize)
+
                         if digest_difficulty >= difficulty_so_far:
                             difficulty_so_far = digest_difficulty
                             b_nonce_so_far = b_nonce
+
                         if responder.poll():
                             command = responder.recv()
                             action = command[0]
                             actual_solver = command[1]
                             if action == _SolverCommand.SWAP:
-                                #LOGGER.warning('solver swap')
                                 responder.send([_SolverState.WORKING,solver,actual_solver])
                                 continue
                             elif action == _SolverCommand.STOP:
                                 responder.send([_SolverState.STOPPED, solver, actual_solver, id, difficulty_so_far, b_nonce_so_far])
                             else:
                                 responder.send([_SolverState.ERROR, solver, actual_solver, 'unhandled event {}'.format(action)])
-                            #LOGGER.warning('solver stop')
                             _Helper.hash_server_close(hashSocket)
                             break
                 else:
