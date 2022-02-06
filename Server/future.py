@@ -52,7 +52,10 @@ class FutureWrapper(object):
         return self._request
 
     def get_result(self, timeout=None):
-        return self._future.result(timeout=timeout)
+        if isinstance(self._future, Future):
+            return self._future.result(timeout=timeout)
+        else:
+            return self._future.result()
 
     def set_result(self, result):
         if self._callback:
