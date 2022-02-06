@@ -35,6 +35,7 @@ from sawtooth_validator.execution import processor_iterator
 from sawtooth_validator.networking.future import FutureResult
 from sawtooth_validator.networking.future import FutureTimeoutError
 from sawtooth_validator.metrics.wrappers import CounterWrapper
+from concurrent.futures import TimeoutError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -462,8 +463,8 @@ class TransactionExecutor(object):
                     futures[fut] = connection_id
                 for fut in futures:
                     try:
-                        fut.get_result(timeout=10)
-                    except FutureTimeoutError:
+                        fut.result(timeout=10)
+                    except TimeoutError:
                         LOGGER.info(
                             "%s did not respond to the Ping, removing "
                             "transaction processor.", futures[fut])

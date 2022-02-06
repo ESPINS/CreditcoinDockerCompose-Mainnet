@@ -35,7 +35,7 @@ class FutureTimeoutError(Exception):
 
 class FutureWrapper(object):
     def __init__(self, correlation_id, request=None, callback=None, loop=None):
-        self._future = loop.create_future() if loop else Future() # type: Future
+        self._future = Future() # type: Future
         self._event_loop = loop # type : AbstractEventLoop
         self.correlation_id = correlation_id
         self._request = request
@@ -51,11 +51,8 @@ class FutureWrapper(object):
     def request(self):
         return self._request
 
-    def get_result(self, timeout=None):
-        if isinstance(self._future, Future):
-            return self._future.result(timeout=timeout)
-        else:
-            return self._future.result()
+    def result(self, timeout=None):
+        return self._future.result(timeout=timeout)
 
     def set_result(self, result):
         if self._callback:
