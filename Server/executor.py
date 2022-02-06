@@ -462,7 +462,7 @@ class TransactionExecutor(object):
                     futures[fut] = connection_id
                 for fut in futures:
                     try:
-                        fut.result(timeout=10)
+                        fut.get_result(timeout=10)
                     except FutureTimeoutError:
                         LOGGER.info(
                             "%s did not respond to the Ping, removing "

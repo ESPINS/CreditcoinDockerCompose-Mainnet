@@ -51,7 +51,7 @@ class FutureWrapper(object):
     def request(self):
         return self._request
 
-    def result(self, timeout=None):
+    def get_result(self, timeout=None):
         return self._future.result(timeout=timeout)
 
     def set_result(self, result):

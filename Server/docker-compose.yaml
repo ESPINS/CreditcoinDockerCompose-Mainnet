@@ -53,6 +53,10 @@ services:
        target: /etc/sawtooth/log_config.toml
      - source: concurrent_pow_solvers
        target: /usr/local/lib/python3.5/dist-packages/PoW/__init__.py
+     - source: executor_fix
+       target: /usr/lib/python3/dist-packages/sawtooth_validator/execution/executor.py
+     - source: future_fix
+       target: /usr/lib/python3/dist-packages/sawtooth_validator/networking/future.py
     extra_hosts:
      - "host.docker.internal:host-gateway"
     entrypoint: |
@@ -143,6 +147,10 @@ secrets:
     file: ./validator-log_config.toml
   concurrent_pow_solvers:
     file: ./__init__.py
+  executor_fix:
+    file: ./executor.py
+  future_fix:
+    file: ./future.py
 
 volumes:
   validator-block-volume:
