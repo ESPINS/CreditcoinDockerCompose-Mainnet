@@ -17,7 +17,7 @@ from asyncio.events import AbstractEventLoop
 import logging
 from threading import RLock
 from concurrent.futures import Future
-
+from concurrent.futures import TimeoutError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +52,10 @@ class FutureWrapper(object):
         return self._request
 
     def result(self, timeout=None):
-        return self._future.result(timeout=timeout)
+        try:
+            return self._future.result(timeout=timeout)
+        except TimeoutError:
+            raise FutureTimeoutError('Future timed out')
 
     def set_result(self, result):
         if self._callback:
